@@ -192,6 +192,26 @@ int PKCS11_EC_KEY_generate_key(PKCS11_session session, EC_KEY *key);
  */
 int PKCS11_ECDSA_sign(PKCS11_session session, const EC_KEY *key, const uint8_t *digest, size_t digest_len, uint8_t *sig, size_t *sig_len);
 
+
+///// TO DO /////
+//@Zhang Xichu
+// modify PKCS11_ECDSA_sign to enable taking plaintext as input
+/**
+ * 
+ * Sign provided data with the private key stored in a token according to the parameters in ECC structure
+ * take plain text as input, and calculates the hash with regard to hash id
+ * 
+ * @param session Session handle
+ * @param key EC_KEY key structure
+ * @param hash_nid ID of hash to use
+ * @param in Input buffer
+ * @param in_len Input byte length
+ * @param sig Output buffer for signed data
+ * @param sig_len Output length
+ * @return int 1 on success, 0 otherwise
+ */
+int PKCS11_ECDSA_sign_new(PKCS11_session session, const EC_KEY *key, int hash_nid, uint8_t *sig, size_t *sig_len, const uint8_t *in, size_t in_len);
+
 /**
  * Verify, whether the hash of signed data corresponds to the provided hash
  * @param session Session handle
@@ -203,6 +223,24 @@ int PKCS11_ECDSA_sign(PKCS11_session session, const EC_KEY *key, const uint8_t *
  * @return 1 if the verification succeeded, 0 otherwise
  */
 int PKCS11_ECDSA_verify(PKCS11_session session, const EC_KEY *key, const uint8_t *digest, size_t digest_len, const uint8_t *sig, size_t sig_len);
+
+
+///// TO DO /////
+// @Zhang Xichu
+// modify PKCS11_ECDSA_sign to enable taking plaintext as input
+/**
+ * Verify, whether the hash of signed data corresponds to the provided hash 
+ * 
+ * @param session Session handle
+ * @param key EC_KEY key structure
+ * @param hash_nid ID of hash to use
+ * @param msg Plaintext message
+ * @param msg_len Message length
+ * @param sig Signed message
+ * @param sig_len Signature length
+ * @return int 1 if the verification succeeded, 0 otherwise
+ */
+int PKCS11_ECDSA_verify_new(PKCS11_session session, const EC_KEY *key, int hash_nid, uint8_t *msg, size_t msg_len, const uint8_t *signature, size_t sig_len, int *correct);
 
 // Error codes
 

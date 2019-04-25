@@ -615,6 +615,54 @@ int PKCS11_ECDSA_sign(CK_SESSION_HANDLE session, const EC_KEY *key, const uint8_
     return 1;
 }
 
+int PKCS11_ECDSA_sign_new(PKCS11_session session, const EC_KEY *key, int hash_nid, uint8_t *sig, size_t *sig_len, const uint8_t *in, size_t in_len){
+#ifndef ENABLE_PKCS11
+    OPENSSL_PUT_ERROR(PKCS11,PKCS11_NOT_ENABLED);
+    return 0;
+#endif
+    if (key == NULL) {
+        OPENSSL_PUT_ERROR(PKCS11, ERR_R_PASSED_NULL_PARAMETER);
+        return 0;
+    }
+
+    CK_RV ret;
+
+    CK_MECHANISM_TYPE type;
+    switch(hash_nid) {
+        case NID_md2 : type = CKM_MD2_RSA_PKCS; break;
+        case NID_md5 : type = CKM_MD5_RSA_PKCS; break;
+        case NID_sha1 : type = CKM_SHA1_RSA_PKCS; break;
+        case NID_sha224 : type = CKM_SHA224_RSA_PKCS; break;
+        case NID_sha256 : type = CKM_SHA256_RSA_PKCS; break;
+        case NID_sha384 : type = CKM_SHA384_RSA_PKCS; break;
+        case NID_sha512 : type = CKM_SHA512_RSA_PKCS; break;
+        case NID_ripemd160 : type = CKM_RIPEMD160_RSA_PKCS; break;
+        default : OPENSSL_PUT_ERROR(PKCS11, PKCS11_UNKNOWN_HASH); return 0;
+    }
+
+    CK_MECHANISM mech = { type, NULL_PTR, 0 };
+
+    CK_OBJECT_HANDLE private;
+    if (!get_ec_key(&session, &private, key, CKO_PRIVATE_KEY))
+        return 0;
+
+    if ((ret = C_SignInit(session, &mech, private)) != CKR_OK) {
+        OPENSSL_PUT_ERROR(PKCS11,ret);
+        return 0;
+    }
+
+    CK_ULONG ret_out_len;
+    if ((ret = C_Sign(session, (unsigned char*)in, in_len, sig, &ret_out_len)) != CKR_OK) {
+        OPENSSL_PUT_ERROR(PKCS11,ret);
+        return 0;
+    }
+    *sig_len = ret_out_len;
+
+    return 1;
+
+}
+
+
 int PKCS11_ECDSA_verify(CK_SESSION_HANDLE session, const EC_KEY *key, const uint8_t *digest, size_t digest_len, const uint8_t *sig, size_t sig_len) {
 #ifndef ENABLE_PKCS11
     OPENSSL_PUT_ERROR(PKCS11,PKCS11_NOT_ENABLED);
@@ -642,4 +690,54 @@ int PKCS11_ECDSA_verify(CK_SESSION_HANDLE session, const EC_KEY *key, const uint
     }
 
     return 1;
+}
+
+int PKCS11_ECDSA_verify_new(PKCS11_session session, const EC_KEY *key, int hash_nid, uint8_t *msg, size_t msg_len, const uint8_t *signature, size_t sig_len, int *correct){
+#ifndef ENABLE_PKCS11
+    OPENSSL_PUT_ERROR(PKCS11,PKCS11_NOT_ENABLED);
+    return 0;
+#endif
+    if (key == NULL ||signature == NULL) {
+        OPENSSL_PUT_ERROR(PKCS11, ERR_R_PASSED_NULL_PARAMETER);
+        return 0;
+    }
+
+    CK_RV ret;
+
+    CK_MECHANISM_TYPE type;
+    switch(hash_nid) {
+        case NID_md2 : type = CKM_MD2_RSA_PKCS; break;
+        case NID_md5 : type = CKM_MD5_RSA_PKCS; break;
+        case NID_sha1 : type = CKM_SHA1_RSA_PKCS; break;
+        case NID_sha224 : type = CKM_SHA224_RSA_PKCS; break;
+        case NID_sha256 : type = CKM_SHA256_RSA_PKCS; break;
+        case NID_sha384 : type = CKM_SHA384_RSA_PKCS; break;
+        case NID_sha512 : type = CKM_SHA512_RSA_PKCS; break;
+        case NID_ripemd160 : type = CKM_RIPEMD160_RSA_PKCS; break;
+        default : OPENSSL_PUT_ERROR(PKCS11, PKCS11_UNKNOWN_HASH); return 0;
+    }
+
+    CK_MECHANISM mech = { type, NULL_PTR, 0 };
+
+    CK_OBJECT_HANDLE public;
+
+    if (!get_ec_key(&session, &public, key, CKO_PUBLIC_KEY))
+        return 0;
+
+    if ((ret = C_VerifyInit(session, &mech, public)) != CKR_OK) {
+        OPENSSL_PUT_ERROR(PKCS11,ret);
+        return 0;
+    }
+
+    ret = C_Verify(session, msg, msg_len, (uint8_t*) signature, sig_len);
+    if(ret == CKR_OK)
+	    *correct = 1;
+    else if((ret == CKR_SIGNATURE_INVALID) || (ret == CKR_SIGNATURE_LEN_RANGE))
+	    *correct = 0;
+    else {
+        OPENSSL_PUT_ERROR(PKCS11,ret);
+        return 0;
+    }
+
+    return 1;  
 }

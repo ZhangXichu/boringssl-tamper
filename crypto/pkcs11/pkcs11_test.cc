@@ -110,6 +110,19 @@ TEST(PKCS11, ECDSASignVerify) {
     ASSERT_TRUE(PKCS11_ECDSA_sign(session, ec.get(), hash, 64, signature, &siglen));
     ASSERT_TRUE(PKCS11_ECDSA_verify(session, ec.get(), hash, 64, signature, siglen));
 
+    ///// TO DO /////
+    //@Zhang Xichu
+    // test the new version of ECDSA sign and verify function
+    unsigned char msg[] = "testing string";
+    unsigned char signature_new[256];
+    size_t siglen_new = 256;
+    int ok;
+    ASSERT_TRUE(PKCS11_ECDSA_sign_new(session, ec.get(), NID_sha512, signature_new, &siglen_new, msg, 14));
+    ASSERT_TRUE(PKCS11_ECDSA_verify_new(session, ec.get(), NID_sha512, msg, 14, signature_new, siglen_new, &ok));
+
+    // ASSERT_TRUE(PKCS11_RSA_verify(session, rsa.get(), NID_sha512, msg, 14, signature, siglen, &ok));
+    /////////////////////
+
     PKCS11_logout(session);
     PKCS11_kill();
 #endif
